@@ -7,37 +7,36 @@
 <meta name="theme-color" content="#2f7d6d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=3">
 </head>
 <body>
 <main>
 
+<div id="boot" class="sub boot">読み込み中…</div>
+
 <section id="login" class="hide">
   <h1>ふたりの家計簿</h1>
   <div class="card">
-    <div class="row"><input id="em" type="email" autocomplete="username" placeholder="メールアドレス"></div>
-    <div class="row"><input id="pw" type="password" autocomplete="current-password" placeholder="パスワード"></div>
+    <input id="em" type="email" autocomplete="username" placeholder="メールアドレス">
+    <input id="pw" type="password" autocomplete="current-password" placeholder="パスワード">
     <button class="go" id="li">ログイン</button>
   </div>
 </section>
 
 <section id="app" class="hide">
-  <div class="top"><h1>ふたりの家計簿</h1><button id="lo">ログアウト</button></div>
-  <div id="st"></div>
+  <div class="top"><h1>ふたりの家計簿</h1><button id="lo" class="txt">ログアウト</button></div>
+  <div id="st" class="err"></div>
 
   <div class="card">
-    <div class="row"><input type="date" id="d"><input type="number" id="amt" inputmode="numeric" placeholder="金額(円)"></div>
-    <div class="row"><select id="cat"></select><input id="memo" placeholder="メモ(任意)"></div>
-    <div class="sub">払った人</div>
-    <div class="seg" id="payer"></div>
-    <button class="go" id="add">追加</button>
-  </div>
-
-  <div class="card">
-    <div class="mon"><button id="pv">‹</button><b id="ml"></b><button id="nx">›</button></div>
+    <div class="mon"><button id="pv" aria-label="前の月">‹</button><b id="ml"></b><button id="nx" aria-label="次の月">›</button></div>
     <div class="big" id="tot"></div>
     <div class="sub" id="pa"></div>
-    <div id="cb" class="mt10"></div>
+    <div class="tabs" id="tabs">
+      <button data-t="breakdown" class="on">今月の内訳</button>
+      <button data-t="compare">前月比</button>
+      <button data-t="trend">6か月推移</button>
+    </div>
+    <div id="panel"></div>
   </div>
 
   <div class="card" id="list"></div>
@@ -45,14 +44,43 @@
   <button class="go mb12" id="ex">CSVで書き出し(バックアップ)</button>
 
   <details class="card"><summary class="sub">名前を変更</summary>
-    <div class="row mt10"><input id="na"><input id="nb"></div>
+    <div class="row mt10"><input id="na" aria-label="1人目の名前"><input id="nb" aria-label="2人目の名前"></div>
     <button class="go" id="sn">保存</button>
   </details>
+
+  <div class="spacer"></div>
+
+  <button id="fab" class="fab" aria-label="記録を追加">＋</button>
+
+  <div id="ov" class="ov hide"></div>
+  <div id="sheet" class="sheet hide" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="sh-t">記録を追加</b><button id="sh-x" class="txt">閉じる</button></div>
+    <div id="sh-st" class="err"></div>
+
+    <label class="lbl" for="amt">金額</label>
+    <div class="amtwrap"><span>¥</span><input id="amt" type="number" inputmode="numeric" placeholder="0"></div>
+
+    <div class="lbl">カテゴリ</div>
+    <div class="cats" id="cats"></div>
+
+    <div class="lbl">払った人</div>
+    <div class="seg" id="payer"></div>
+
+    <label class="lbl" for="d">日付</label>
+    <input type="date" id="d">
+
+    <label class="lbl" for="memo">メモ(任意)</label>
+    <input id="memo" placeholder="例:スーパー">
+
+    <button class="go mt14" id="save">追加</button>
+    <button class="danger hide" id="del">この記録を削除</button>
+  </div>
 </section>
 
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js"></script>
+<script src="./app.js?v=3"></script>
 </body>
 </html>
