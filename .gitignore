@@ -1,0 +1,15 @@
+# 家計データ・バックアップ(公開しない)
+*.csv
+*.sql
+*.dump
+
+# 秘密情報
+.env
+.env.*
+*.key
+*.pem
+
+# OS・エディタ
+.DS_Store
+Thumbs.db
+.vscode/
