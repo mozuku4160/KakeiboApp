@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://pjdbmpclqjhkdxnkgymd.supabase.co wss://pjdbmpclqjhkdxnkgymd.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d6d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ふたりの家計簿</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main>
+
+<section id="login" class="hide">
+  <h1>ふたりの家計簿</h1>
+  <div class="card">
+    <div class="row"><input id="em" type="email" autocomplete="username" placeholder="メールアドレス"></div>
+    <div class="row"><input id="pw" type="password" autocomplete="current-password" placeholder="パスワード"></div>
+    <button class="go" id="li">ログイン</button>
+  </div>
+</section>
+
+<section id="app" class="hide">
+  <div class="top"><h1>ふたりの家計簿</h1><button id="lo">ログアウト</button></div>
+  <div id="st"></div>
+
+  <div class="card">
+    <div class="row"><input type="date" id="d"><input type="number" id="amt" inputmode="numeric" placeholder="金額(円)"></div>
+    <div class="row"><select id="cat"></select><input id="memo" placeholder="メモ(任意)"></div>
+    <div class="sub">払った人</div>
+    <div class="seg" id="payer"></div>
+    <button class="go" id="add">追加</button>
+  </div>
+
+  <div class="card">
+    <div class="mon"><button id="pv">‹</button><b id="ml"></b><button id="nx">›</button></div>
+    <div class="big" id="tot"></div>
+    <div class="sub" id="pa"></div>
+    <div id="cb" class="mt10"></div>
+  </div>
+
+  <div class="card" id="list"></div>
+
+  <button class="go mb12" id="ex">CSVで書き出し(バックアップ)</button>
+
+  <details class="card"><summary class="sub">名前を変更</summary>
+    <div class="row mt10"><input id="na"><input id="nb"></div>
+    <button class="go" id="sn">保存</button>
+  </details>
+</section>
+
+</main>
+
+<script src="./supabase.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
