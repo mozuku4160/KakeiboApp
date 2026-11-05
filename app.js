@@ -2,6 +2,7 @@ const SUPABASE_URL="https://pjdbmpclqjhkdxnkgymd.supabase.co";
 const SUPABASE_KEY="sb_publishable_Rph11ekGQmY3VYYGAHTtIA_RRf94wNS";
 const CATS=[
   {n:"食費",i:"🍴",c:"#e5484d"},
+  {n:"外食",i:"🍜",c:"#d9822b"},
   {n:"日用品",i:"🪥",c:"#5fb87c"},
   {n:"趣味・娯楽",i:"⭐",c:"#e0508a"},
   {n:"交際費",i:"👥",c:"#3f6fb5"},
@@ -10,6 +11,7 @@ const CATS=[
   {n:"健康・医療",i:"🏥",c:"#f2735a"},
   {n:"自動車",i:"🚗",c:"#8a8f98"},
   {n:"教養・教育",i:"📘",c:"#5b7fc7"},
+  {n:"子ども・育児",i:"🍼",c:"#4fb3c7"},
   {n:"特別な支出",i:"❗",c:"#9cbf6a"},
   {n:"現金・カード",i:"💳",c:"#c98a4f"}
 ];
