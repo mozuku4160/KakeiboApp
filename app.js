@@ -191,16 +191,33 @@ function renderList(cur){
 }
 
 /* ---------- 入力シート(追加・編集) ---------- */
+function renderCatBtn(){
+  const b=$("catbtn");b.innerHTML="";
+  b.append(icon(formCat),el("span","cn",formCat),el("span","chev","›"));
+}
 function renderCats(){
   const box=$("cats");box.innerHTML="";
   CATS.forEach(c=>{
     const b=el("button",c.n===formCat?"on":"");b.type="button";
     b.setAttribute("aria-pressed",c.n===formCat?"true":"false");
     b.append(icon(c.n),el("span",null,c.n));
-    b.onclick=()=>{formCat=c.n;renderCats()};
+    b.onclick=()=>{formCat=c.n;renderCatBtn();closePicker()};
     box.appendChild(b);
   });
+  renderCatBtn();
 }
+function openPicker(){
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  renderCats();
+  $("cov").classList.remove("hide");$("cpick").classList.remove("hide");
+}
+function closePicker(){
+  $("cov").classList.add("hide");$("cpick").classList.add("hide");
+  $("catbtn").focus();
+}
+$("catbtn").onclick=openPicker;
+$("cov").onclick=closePicker;
+$("cp-x").onclick=closePicker;
 function renderPayer(){
   const box=$("payer");box.innerHTML="";
   ["a","b"].forEach(k=>{
@@ -227,6 +244,7 @@ function openSheet(e){
   if(!editing)$("amt").focus();
 }
 function closeSheet(){
+  $("cov").classList.add("hide");$("cpick").classList.add("hide");
   $("ov").classList.add("hide");$("sheet").classList.add("hide");
   document.body.classList.remove("lock");editing=null;
   if(lastFocus&&lastFocus.focus)lastFocus.focus();lastFocus=null;
@@ -234,7 +252,11 @@ function closeSheet(){
 $("fab").onclick=()=>openSheet(null);
 $("ov").onclick=closeSheet;
 $("sh-x").onclick=closeSheet;
-document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!$("sheet").classList.contains("hide"))closeSheet()});
+document.addEventListener("keydown",ev=>{
+  if(ev.key!=="Escape")return;
+  if(!$("cpick").classList.contains("hide"))closePicker();
+  else if(!$("sheet").classList.contains("hide"))closeSheet();
+});
 
 $("save").onclick=async()=>{
   const amount=Math.round(Number($("amt").value));

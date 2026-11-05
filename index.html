@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#2f7d6d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=4">
+<link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
 <main>
@@ -62,7 +62,7 @@
     <div class="amtwrap"><span>¥</span><input id="amt" type="number" inputmode="numeric" placeholder="0"></div>
 
     <div class="lbl">カテゴリ</div>
-    <div class="cats" id="cats"></div>
+    <button type="button" id="catbtn" class="catbtn" aria-haspopup="dialog"></button>
 
     <div class="lbl">払った人</div>
     <div class="seg" id="payer"></div>
@@ -76,11 +76,18 @@
     <button class="go mt14" id="save">追加</button>
     <button class="danger hide" id="del">この記録を削除</button>
   </div>
+
+  <div id="cov" class="ov ov2 hide"></div>
+  <div id="cpick" class="sheet cpick hide" role="dialog" aria-modal="true" aria-labelledby="cp-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="cp-t">カテゴリを選択</b><button type="button" id="cp-x" class="txt">閉じる</button></div>
+    <div class="cats" id="cats"></div>
+  </div>
 </section>
 
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=4"></script>
+<script src="./app.js?v=5"></script>
 </body>
 </html>
