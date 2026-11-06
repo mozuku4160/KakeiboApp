@@ -238,7 +238,7 @@ function renderList(cur){
     const r=el("div","it");r.tabIndex=0;r.setAttribute("role","button");
     r.setAttribute("aria-label",e.category+" "+yen(e.amount)+" を編集");
     const m=el("div","m");
-    m.append(el("div","ell",e.category+(e.memo?"  "+e.memo:"")),
+    m.append(el("div","ell",e.memo||e.category),
       el("div","t",(e.recurring_id?"🔁 ":"")+e.date.slice(5).replace("-","/")+"  "+(names[e.payer]||"")+"が支払い"));
     r.append(icon(e.category),m,el("b",null,yen(e.amount)),el("span","chev","›"));
     r.onclick=()=>openSheet(e);
