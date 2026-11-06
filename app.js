@@ -21,10 +21,26 @@ const today=()=>{const t=new Date();return t.getFullYear()+"-"+pad(t.getMonth()+
 const monthAdd=(m,n)=>{const [y,mo]=m.split("-").map(Number);const d=new Date(y,mo-1+n,1);return d.getFullYear()+"-"+pad(d.getMonth()+1)};
 const mLabel=m=>Number(m.slice(5))+"月";
 const catOf=n=>CATS.find(c=>c.n===n)||{n:n,i:"・",c:"#999999"};
+/* 固定費の日付: 指定日が月の日数を超えるときは月末日にする(31 = 月末) */
+function dateFor(m,day){
+  const [y,mo]=m.split("-").map(Number);
+  const last=new Date(y,mo,0).getDate();
+  return m+"-"+pad(Math.min(day,last));
+}
+const dayLabel=d=>d>=31?"月末":d+"日";
+const dayOf=s=>Number((s||"").slice(8,10))||1;
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function icon(name){const c=catOf(name);const s=el("span","ic",c.i);s.style.background=c.c+"33";return s}
+function fillDays(sel){
+  sel.innerHTML="";
+  for(let i=1;i<=31;i++){const o=el("option",null,dayLabel(i));o.value=String(i);sel.appendChild(o)}
+}
 const msg=t=>{$("st").textContent=t||""};
 const smsg=t=>{$("sh-st").textContent=t||""};
+const emsg=t=>{$("re-st").textContent=t||""};
+const hidden=id=>$(id).classList.contains("hide");
+const lockOn=()=>document.body.classList.add("lock");
+const lockOff=()=>{if(hidden("sheet")&&hidden("rsheet"))document.body.classList.remove("lock")};
 
 /* ライブラリが読めないときは画面に表示する */
 if(typeof supabase==="undefined"){
@@ -35,8 +51,9 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let names={a:"自分",b:"パートナー"},rows6=[],month=today().slice(0,7),chan=null,loaded=false,seq=0;
 let tab="breakdown",trendCat="全体";
-let editing=null,formCat=CATS[0].n,formPayer="a",prefPayer="a";
+let editing=null,formCat=CATS[0].n,formPayer="a",prefPayer="a",dayTouched=false;
 try{prefPayer=localStorage.getItem("payer")||"a"}catch(e){}
+fillDays($("rday"));fillDays($("rday2"));
 
 /* ---------- 認証 ---------- */
 function show(session){
@@ -44,7 +61,7 @@ function show(session){
   $("login").classList.toggle("hide",!!session);
   $("app").classList.toggle("hide",!session);
   if(session&&!loaded){loaded=true;init()}
-  if(!session){loaded=false;closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
+  if(!session){loaded=false;closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
 }
 sb.auth.getSession().then(({data})=>show(data.session));
 sb.auth.onAuthStateChange((_e,s)=>show(s));
@@ -80,11 +97,52 @@ async function loadNames(){
 }
 async function init(){
   render();
-  await loadNames();await load();
+  await loadNames();
+  await runRecurring();
+  await load();
   chan=sb.channel("kakeibo")
     .on("postgres_changes",{event:"*",schema:"public",table:"entries"},load)
     .on("postgres_changes",{event:"*",schema:"public",table:"settings"},loadNames)
     .subscribe();
+}
+/* 開いたままのアプリに戻ってきたときも、固定費の自動追加を確認する */
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden&&loaded)runRecurring().then(n=>{if(n)load()});
+});
+
+/* ---------- 固定費の自動追加 ----------
+   ルールごとの「作成済みの月(last_month)」を先に更新できた端末だけが記録を追加する。
+   ふたりが同時に開いても二重に作られず、削除した月も復活しない。 */
+let genBusy=false;
+async function runRecurring(){
+  if(genBusy)return 0;
+  genBusy=true;
+  try{
+    const td=today(),cur=td.slice(0,7);
+    const {data:rules,error}=await sb.from("recurring").select("*").eq("active",true);
+    if(error||!rules)return 0;
+    let made=0;
+    for(const r of rules){
+      let last=r.last_month;
+      for(let m=monthAdd(last,1);m<=cur;m=monthAdd(m,1)){
+        if(r.end_month&&m>r.end_month)break;
+        const date=dateFor(m,r.day);
+        if(date>td)break;
+        const c=await sb.from("recurring").update({last_month:m}).eq("id",r.id).eq("last_month",last).select("id");
+        if(c.error||!c.data||!c.data.length)break;
+        last=m;
+        const ins=await sb.from("entries").insert({date:date,amount:r.amount,category:r.category,payer:r.payer,memo:r.memo,recurring_id:r.id});
+        if(ins.error){
+          await sb.from("recurring").update({last_month:monthAdd(m,-1)}).eq("id",r.id).eq("last_month",m);
+          msg("固定費の自動追加に失敗しました: "+ins.error.message);
+          break;
+        }
+        made++;
+      }
+    }
+    return made;
+  }catch(e){return 0}
+  finally{genBusy=false}
 }
 
 /* ---------- 月の切り替え・タブ ---------- */
@@ -181,7 +239,7 @@ function renderList(cur){
     r.setAttribute("aria-label",e.category+" "+yen(e.amount)+" を編集");
     const m=el("div","m");
     m.append(el("div","ell",e.category+(e.memo?"  "+e.memo:"")),
-      el("div","t",e.date.slice(5).replace("-","/")+"  "+(names[e.payer]||"")+"が支払い"));
+      el("div","t",(e.recurring_id?"🔁 ":"")+e.date.slice(5).replace("-","/")+"  "+(names[e.payer]||"")+"が支払い"));
     r.append(icon(e.category),m,el("b",null,yen(e.amount)),el("span","chev","›"));
     r.onclick=()=>openSheet(e);
     r.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();openSheet(e)}};
@@ -226,6 +284,14 @@ function renderPayer(){
     box.appendChild(b);
   });
 }
+/* 「毎月くり返す」スイッチ */
+$("rep").onchange=()=>{
+  $("repbox").classList.toggle("hide",!$("rep").checked);
+  if($("rep").checked&&!dayTouched)$("rday").value=String(dayOf($("d").value));
+};
+$("d").onchange=()=>{if($("rep").checked&&!dayTouched)$("rday").value=String(dayOf($("d").value))};
+$("rday").onchange=()=>{dayTouched=true};
+
 let lastFocus=null;
 function openSheet(e){
   editing=e||null;lastFocus=document.activeElement;smsg("");
@@ -237,15 +303,20 @@ function openSheet(e){
   $("memo").value=editing&&editing.memo?editing.memo:"";
   formCat=editing?editing.category:formCat;
   formPayer=editing?editing.payer:prefPayer;
+  const fromRule=!!(editing&&editing.recurring_id);
+  $("reprow").classList.toggle("hide",fromRule);
+  $("repnote").classList.toggle("hide",!fromRule);
+  $("rep").checked=false;$("repbox").classList.add("hide");
+  $("rend").value="";dayTouched=false;$("rday").value=String(dayOf($("d").value));
   renderCats();renderPayer();
   $("ov").classList.remove("hide");$("sheet").classList.remove("hide");
-  document.body.classList.add("lock");$("sheet").scrollTop=0;
+  lockOn();$("sheet").scrollTop=0;
   if(!editing)$("amt").focus();
 }
 function closeSheet(){
   $("cov").classList.add("hide");$("cpick").classList.add("hide");
   $("ov").classList.add("hide");$("sheet").classList.add("hide");
-  document.body.classList.remove("lock");editing=null;
+  lockOff();editing=null;
   if(lastFocus&&lastFocus.focus)lastFocus.focus();lastFocus=null;
 }
 $("fab").onclick=()=>openSheet(null);
@@ -253,8 +324,10 @@ $("ov").onclick=closeSheet;
 $("sh-x").onclick=closeSheet;
 document.addEventListener("keydown",ev=>{
   if(ev.key!=="Escape")return;
-  if(!$("cpick").classList.contains("hide"))closePicker();
-  else if(!$("sheet").classList.contains("hide"))closeSheet();
+  if(!hidden("cpick"))closePicker();
+  else if(!hidden("redit"))closeRuleEdit();
+  else if(!hidden("rsheet"))closeRules();
+  else if(!hidden("sheet"))closeSheet();
 });
 
 $("save").onclick=async()=>{
@@ -262,22 +335,111 @@ $("save").onclick=async()=>{
   if(!amount||amount<=0){smsg("金額を入力してください");$("amt").focus();return}
   if(!$("d").value){smsg("日付を入力してください");$("d").focus();return}
   const row={date:$("d").value,amount:amount,category:formCat,payer:formPayer,memo:$("memo").value.trim()||null};
+  const wantRep=$("rep").checked&&!$("reprow").classList.contains("hide");
+  const start=row.date.slice(0,7),end=$("rend").value||null;
+  if(wantRep&&end&&end<start){smsg("終了月は、記録の月以降にしてください");return}
   $("save").disabled=true;
-  const {error}=editing
-    ?await sb.from("entries").update(row).eq("id",editing.id)
-    :await sb.from("entries").insert(row);
-  $("save").disabled=false;
-  if(error){smsg("保存に失敗しました: "+error.message);return}
-  closeSheet();
-  month=row.date.slice(0,7);
-  await load();
+  try{
+    let ruleId=null;
+    if(wantRep){
+      const r=await sb.from("recurring").insert({day:Number($("rday").value),amount:amount,category:formCat,payer:formPayer,memo:row.memo,start_month:start,last_month:start,end_month:end,active:true}).select("id").single();
+      if(r.error||!r.data){smsg("固定費の登録に失敗しました: "+(r.error?r.error.message:"")+"(データベースの準備が済んでいるか確認してください)");return}
+      ruleId=r.data.id;row.recurring_id=ruleId;
+    }
+    const {error}=editing
+      ?await sb.from("entries").update(row).eq("id",editing.id)
+      :await sb.from("entries").insert(row);
+    if(error){
+      if(ruleId)await sb.from("recurring").delete().eq("id",ruleId);
+      smsg("保存に失敗しました: "+error.message);return;
+    }
+    closeSheet();
+    month=row.date.slice(0,7);
+    await load();
+  }finally{$("save").disabled=false}
 };
 $("del").onclick=async()=>{
   if(!editing)return;
-  if(!confirm("この記録を削除しますか?\n"+editing.date+" "+editing.category+" "+yen(editing.amount)))return;
+  if(!confirm("この記録を削除しますか?\n"+editing.date+" "+editing.category+" "+yen(editing.amount)+(editing.recurring_id?"\n(固定費の設定は残り、この月の分は再作成されません)":"")))return;
   const {error}=await sb.from("entries").delete().eq("id",editing.id);
   if(error){smsg("削除に失敗しました: "+error.message);return}
   closeSheet();await load();
+};
+
+/* ---------- 固定費の管理 ---------- */
+let editRule=null;
+async function loadRules(){
+  const box=$("rlist");box.innerHTML="";
+  const {data,error}=await sb.from("recurring").select("*").order("id");
+  if(error){box.appendChild(el("div","err","読み込みに失敗しました: "+error.message));return}
+  if(!data.length){box.appendChild(el("div","sub","固定費はまだ登録されていません。記録の追加画面で「毎月くり返す」をONにすると登録できます。"));return}
+  data.forEach(r=>{
+    const row=el("div","it");row.tabIndex=0;row.setAttribute("role","button");
+    const m=el("div","m");
+    const next=monthAdd(r.last_month,1);
+    const fin=r.end_month&&next>r.end_month;
+    const info=["毎月"+dayLabel(r.day),names[r.payer]||""];
+    if(r.end_month)info.push("〜"+r.end_month);
+    info.push(!r.active?"停止中":fin?"終了":"次回 "+dateFor(next,r.day).slice(5).replace("-","/"));
+    m.append(el("div","ell",(r.memo||r.category)),el("div","t",info.join(" · ")));
+    row.append(icon(r.category),m,el("b",null,yen(r.amount)),el("span","chev","›"));
+    row.onclick=()=>openRuleEdit(r);
+    row.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();openRuleEdit(r)}};
+    box.appendChild(row);
+  });
+}
+function openRules(){
+  lastFocus=document.activeElement;
+  $("rov").classList.remove("hide");$("rsheet").classList.remove("hide");
+  lockOn();$("rsheet").scrollTop=0;loadRules();
+}
+function closeRules(){
+  closeRuleEdit();
+  $("rov").classList.add("hide");$("rsheet").classList.add("hide");
+  lockOff();
+}
+function openRuleEdit(r){
+  editRule=r;emsg("");
+  $("rinfo").textContent=r.category+" · "+(names[r.payer]||"")+" · "+r.start_month+" から";
+  $("ramt").value=r.amount;$("rday2").value=String(r.day);
+  $("rend2").value=r.end_month||"";$("rmemo").value=r.memo||"";$("ract").checked=!!r.active;
+  $("eov").classList.remove("hide");$("redit").classList.remove("hide");$("redit").scrollTop=0;
+}
+function closeRuleEdit(){
+  $("eov").classList.add("hide");$("redit").classList.add("hide");editRule=null;
+}
+$("rm").onclick=openRules;
+$("rov").onclick=closeRules;
+$("rs-x").onclick=closeRules;
+$("eov").onclick=closeRuleEdit;
+$("re-x").onclick=closeRuleEdit;
+$("rsave").onclick=async()=>{
+  if(!editRule)return;
+  const amount=Math.round(Number($("ramt").value));
+  if(!amount||amount<=0){emsg("金額を入力してください");return}
+  const end=$("rend2").value||null;
+  if(end&&end<editRule.start_month){emsg("終了月は、開始月("+editRule.start_month+")以降にしてください");return}
+  const act=$("ract").checked;
+  const patch={amount:amount,day:Number($("rday2").value),memo:$("rmemo").value.trim()||null,end_month:end,active:act};
+  /* 停止していた固定費を再開したときは、止めていた月をさかのぼって作らない */
+  if(act&&!editRule.active){
+    const prev=monthAdd(today().slice(0,7),-1);
+    if(editRule.last_month<prev)patch.last_month=prev;
+  }
+  $("rsave").disabled=true;
+  try{
+    const {error}=await sb.from("recurring").update(patch).eq("id",editRule.id);
+    if(error){emsg("保存に失敗しました: "+error.message);return}
+    closeRuleEdit();await loadRules();
+    if(await runRecurring())await load();
+  }finally{$("rsave").disabled=false}
+};
+$("rdel").onclick=async()=>{
+  if(!editRule)return;
+  if(!confirm("この固定費を削除しますか?\n過去に作られた記録は、そのまま残ります。"))return;
+  const {error}=await sb.from("recurring").delete().eq("id",editRule.id);
+  if(error){emsg("削除に失敗しました: "+error.message);return}
+  closeRuleEdit();await loadRules();await load();
 };
 
 /* ---------- 名前の変更 ---------- */

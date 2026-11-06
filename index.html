@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#2f7d6d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=7">
+<link rel="stylesheet" href="./style.css?v=8">
 </head>
 <body>
 <main>
@@ -41,6 +41,8 @@
 
   <div class="card" id="list"></div>
 
+  <button class="ghost mb12" id="rm">🔁 固定費の管理</button>
+
   <button class="go mb12" id="ex">CSVで書き出し(バックアップ)</button>
 
   <details class="card"><summary class="sub">名前を変更</summary>
@@ -60,6 +62,16 @@
 
     <label class="lbl" for="amt">金額</label>
     <div class="amtwrap"><span>¥</span><input id="amt" type="number" inputmode="numeric" placeholder="0"></div>
+
+    <label class="tog" id="reprow"><span>🔁 毎月くり返す(固定費)</span><input type="checkbox" id="rep"></label>
+    <div id="repbox" class="repbox hide">
+      <div class="row">
+        <div><label class="lbl" for="rday">毎月</label><select id="rday"></select></div>
+        <div><label class="lbl" for="rend">終了月(任意)</label><input type="month" id="rend"></div>
+      </div>
+      <div class="sub mb12">次の月から、この内容の記録が自動で追加されます。</div>
+    </div>
+    <div id="repnote" class="sub mb12 hide">🔁 固定費から自動で作られた記録です。金額などは、この月の分だけ直せます。毎月の設定は「固定費の管理」で変更します。</div>
 
     <div class="lbl">カテゴリ</div>
     <button type="button" id="catbtn" class="catbtn" aria-haspopup="dialog"></button>
@@ -83,11 +95,38 @@
     <div class="sh-head"><b id="cp-t">カテゴリを選択</b><button type="button" id="cp-x" class="txt">閉じる</button></div>
     <div class="cats" id="cats"></div>
   </div>
+
+  <div id="rov" class="ov hide"></div>
+  <div id="rsheet" class="sheet hide" role="dialog" aria-modal="true" aria-labelledby="rs-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="rs-t">固定費の管理</b><button type="button" id="rs-x" class="txt">閉じる</button></div>
+    <div class="sub mb12">毎月自動で追加される記録です。金額を変えると、次に作られる月から反映されます(作成済みの記録は変わりません)。</div>
+    <div id="rlist"></div>
+  </div>
+
+  <div id="eov" class="ov ov2 hide"></div>
+  <div id="redit" class="sheet cpick hide" role="dialog" aria-modal="true" aria-labelledby="re-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="re-t">固定費を編集</b><button type="button" id="re-x" class="txt">閉じる</button></div>
+    <div id="re-st" class="err"></div>
+    <div id="rinfo" class="cmp-sum"></div>
+    <label class="lbl" for="ramt">金額</label>
+    <div class="amtwrap"><span>¥</span><input id="ramt" type="number" inputmode="numeric"></div>
+    <div class="row">
+      <div><label class="lbl" for="rday2">毎月</label><select id="rday2"></select></div>
+      <div><label class="lbl" for="rend2">終了月(任意)</label><input type="month" id="rend2"></div>
+    </div>
+    <label class="lbl" for="rmemo">メモ(任意)</label>
+    <input id="rmemo">
+    <label class="tog"><span>自動で追加する</span><input type="checkbox" id="ract"></label>
+    <button class="go" id="rsave">保存</button>
+    <button class="danger" id="rdel">この固定費を削除</button>
+  </div>
 </section>
 
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=7"></script>
+<script src="./app.js?v=8"></script>
 </body>
 </html>
