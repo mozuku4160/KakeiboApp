@@ -311,7 +311,6 @@ function openSheet(e){
   renderCats();renderPayer();
   $("ov").classList.remove("hide");$("sheet").classList.remove("hide");
   lockOn();$("sheet").scrollTop=0;
-  if(!editing)$("amt").focus();
 }
 function closeSheet(){
   $("cov").classList.add("hide");$("cpick").classList.add("hide");
@@ -319,6 +318,12 @@ function closeSheet(){
   lockOff();editing=null;
   if(lastFocus&&lastFocus.focus)lastFocus.focus();lastFocus=null;
 }
+/* キーボードは自動では出さない。入力欄をタップしたときだけ出て、Enterか欄の外のタップで閉じる */
+["amt","memo"].forEach(id=>$(id).addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ev.target.blur()}}));
+$("sheet").addEventListener("click",ev=>{
+  const a=document.activeElement;
+  if(a&&a.tagName==="INPUT"&&!ev.target.closest("input,select,label,.amtwrap"))a.blur();
+});
 $("fab").onclick=()=>openSheet(null);
 $("ov").onclick=closeSheet;
 $("sh-x").onclick=closeSheet;
