@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#2f7d6d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=10">
+<link rel="stylesheet" href="./style.css?v=11">
 </head>
 <body>
 <main>
@@ -42,6 +42,7 @@
   <div class="card" id="list"></div>
 
   <button class="ghost mb12" id="rm">🔁 固定費の管理</button>
+  <button class="ghost mb12" id="cm">🎨 カテゴリの管理</button>
 
   <button class="go mb12" id="ex">CSVで書き出し(バックアップ)</button>
 
@@ -122,11 +123,46 @@
     <button class="go" id="rsave">保存</button>
     <button class="danger" id="rdel">この固定費を削除</button>
   </div>
+
+  <div id="cmov" class="ov hide"></div>
+  <div id="csheet" class="sheet hide" role="dialog" aria-modal="true" aria-labelledby="cs-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="cs-t">カテゴリの管理</b><button type="button" id="cs-x" class="txt">閉じる</button></div>
+    <div class="sub mb12">タップで編集、▲▼で並べ替えます。ふたりで共通です。</div>
+    <div id="clist"></div>
+    <button type="button" class="ghost mt10" id="cadd">＋ カテゴリを追加</button>
+  </div>
+
+  <div id="ceov" class="ov ov2 hide"></div>
+  <div id="cedit" class="sheet cpick hide" role="dialog" aria-modal="true" aria-labelledby="ce-t">
+    <div class="grab"></div>
+    <div class="sh-head"><b id="ce-t">カテゴリを編集</b><button type="button" id="ce-x" class="txt">閉じる</button></div>
+    <div id="ce-st" class="err"></div>
+    <div id="cprev" class="cprev"></div>
+    <label class="lbl" for="cname">名前(20文字まで)</label>
+    <input id="cname" maxlength="20">
+    <label class="lbl" for="cicon">アイコン(下から選ぶか、絵文字を入力)</label>
+    <input id="cicon" class="cicon">
+    <div id="emo" class="emo"></div>
+    <div class="lbl">色</div>
+    <div id="sw" class="sw"></div>
+    <label class="tog" id="cshowrow"><span>入力画面に表示する</span><input type="checkbox" id="cshow"></label>
+    <button class="go" id="cs-save">保存</button>
+    <div id="cmergebox">
+      <button type="button" class="ghost mt10" id="cmbtn">別のカテゴリに統合…</button>
+      <div id="cmreg" class="hide mt10">
+        <label class="lbl" for="cmsel">移し先</label>
+        <select id="cmsel"></select>
+        <button class="danger" id="cmgo">記録を移して、このカテゴリを削除</button>
+      </div>
+    </div>
+    <button class="danger" id="cdel">このカテゴリを削除</button>
+  </div>
 </section>
 
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=10"></script>
+<script src="./app.js?v=11"></script>
 </body>
 </html>

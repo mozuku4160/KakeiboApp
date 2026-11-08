@@ -110,3 +110,17 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 input[type=month]{appearance:none;-webkit-appearance:none}
 
 .amtwrap input::placeholder{font-size:18px;font-weight:400;color:var(--sub)}
+
+/* カテゴリの管理 */
+.arr{width:40px;min-height:40px;padding:0;font-size:13px;color:var(--sub);flex:none}
+.arr:disabled{opacity:.3}
+.it.dim .ic,.it.dim .m{opacity:.5}
+#cedit{max-height:90vh;max-height:90dvh}
+.cprev{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:10px;padding:10px 12px;margin:4px 0 6px;font-weight:700}
+.cicon{font-size:22px;text-align:center}
+.emo{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:176px;overflow-y:auto;border:1px solid var(--bd);border-radius:12px;padding:6px;margin-bottom:10px}
+.emo button{min-height:40px;padding:0;font-size:22px;border:2px solid transparent;background:none}
+.emo button.on{border-color:var(--ac);background:var(--soft)}
+.sw{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:12px}
+.sw button{min-height:0;aspect-ratio:1;border-radius:50%;border:3px solid transparent;padding:0}
+.sw button.on{border-color:var(--tx)}
