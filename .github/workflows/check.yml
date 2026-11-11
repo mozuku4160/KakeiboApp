@@ -1,0 +1,50 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScriptの構文チェック
+        run: node --check app.js
+
+      - name: index.html が参照するファイルの確認
+        run: |
+          for f in app.js style.css supabase.min.js; do
+            grep -q "\./$f" index.html || { echo "::error::index.html が $f を参照していません"; exit 1; }
+            test -s "$f" || { echo "::error::$f がない、または空です"; exit 1; }
+          done
+
+      - name: 接続先の制限(CSP)が残っているか
+        run: |
+          grep -q 'http-equiv="Content-Security-Policy"' index.html || { echo "::error::CSP が見つかりません"; exit 1; }
+          grep -q "script-src 'self'" index.html || { echo "::error::CSP の script-src 'self' が見つかりません"; exit 1; }
+
+      - name: app.js と style.css の版番号がそろっているか
+        run: |
+          a=$(grep -o 'app\.js?v=[0-9]*' index.html | cut -d= -f2)
+          s=$(grep -o 'style\.css?v=[0-9]*' index.html | cut -d= -f2)
+          echo "app.js v=$a / style.css v=$s"
+          test -n "$a" && [ "$a" = "$s" ] || { echo "::error::版番号がそろっていません(app.js v=$a / style.css v=$s)"; exit 1; }
+
+      - name: 秘密の鍵が混ざっていないか
+        run: |
+          files=$(git ls-files | grep -v -x -e supabase.min.js -e .github/workflows/check.yml)
+          if grep -nE 'service_role|sb_secret_|eyJhbGciOi[A-Za-z0-9_-]{20,}|postgres(ql)?://[^ ]*:[^ @]+@' $files; then
+            echo "::error::秘密の鍵やパスワードらしき文字列があります"; exit 1
+          fi
+
+      - name: 家計データのファイルが入っていないか
+        run: |
+          if git ls-files | grep -iE '\.(csv|xlsx|dump)$'; then
+            echo "::error::家計データらしきファイルがあります"; exit 1
+          fi
