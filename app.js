@@ -36,6 +36,11 @@ const hidden=id=>$(id).classList.contains("hide");
 const lockOn=()=>document.body.classList.add("lock");
 const lockOff=()=>{if(hidden("sheet")&&hidden("rsheet")&&hidden("csheet"))document.body.classList.remove("lock")};
 
+/* PWA: 画面のファイルをスマホに保存する仕組み(sw.js)を登録 */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{})});
+}
+
 /* ライブラリが読めないときは画面に表示する */
 if(typeof supabase==="undefined"){
   $("boot").textContent="ライブラリ(supabase.min.js)を読み込めませんでした。ファイルが正しく置かれているか確認してください。";
@@ -81,7 +86,7 @@ async function load(){
     const data=await fetchRange(monthAdd(month,-5)+"-01",monthAdd(month,1)+"-01");
     if(my!==seq)return;
     rows6=data;msg("");render();
-  }catch(e){if(my===seq)msg("読み込みに失敗しました: "+e.message)}
+  }catch(e){if(my===seq)msg(navigator.onLine===false?"オフラインです。記録の読み込みと保存には通信が必要です。":"読み込みに失敗しました: "+e.message)}
 }
 async function loadNames(){
   const {data}=await sb.from("settings").select("*");

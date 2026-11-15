@@ -10,6 +10,7 @@
 | `app.js` | アプリ本体 |
 | `style.css` | 見た目 |
 | `supabase.min.js` | Supabase 接続ライブラリ(v2.45.4 を同梱) |
+| `manifest.json` / `sw.js` / `icons/` | PWA(ホーム画面からアプリのように開く仕組み)。`sw.js` は画面のファイルだけを保存し、家計データは保存しない |
 | `sql/` | データベースの変更履歴。番号順に実行する |
 | `.github/workflows/check.yml` | PR ごとの自動チェック |
 
@@ -24,7 +25,8 @@
 ## ルール
 
 - PR のタイトルは `v番号: 変更内容`
-- `app.js` か `style.css` を変えたら、`index.html` の `?v=` を両方そろえて上げる
+- `app.js` か `style.css` を変えたら、`index.html` の `?v=` を両方そろえて上げ、`sw.js` の `CACHE` と `FILES` の番号も同じにする
+- アイコンを変えるときは、ファイル名の `v1` を上げる(古い画像が残らないように)
 - PR は1つずつ出す(公開処理が詰まらないように)
 - 秘密の鍵(secret key)、データベースのパスワード、CSV などの家計データはリポジトリに入れない
 - 公開用キー(publishable key)は公開して問題ない。データはログインした人しか読めない(RLS)
