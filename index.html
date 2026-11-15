@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-v1-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-v1-apple-180.png">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=13">
+<link rel="stylesheet" href="./style.css?v=14">
 </head>
 <body>
 <main>
@@ -67,7 +67,13 @@
     <div id="sh-st" class="err"></div>
 
     <label class="lbl" for="amt">金額</label>
-    <div class="amtwrap"><span>¥</span><input id="amt" type="number" inputmode="numeric" placeholder="タップして入力"></div>
+    <div class="amtwrap"><span>¥</span><input id="amt" type="text" inputmode="numeric" autocomplete="off" placeholder="タップして入力"></div>
+    <div class="amtops">
+      <button type="button" data-op="+" aria-label="足す">＋</button>
+      <button type="button" data-op="-" aria-label="引く">−</button>
+      <button type="button" data-op="bs" aria-label="1文字消す">⌫</button>
+      <span id="amtres" class="amtres" aria-live="polite"></span>
+    </div>
 
     <label class="tog" id="reprow"><span>🔁 毎月くり返す(固定費)</span><input type="checkbox" id="rep"></label>
     <div id="repbox" class="repbox hide">
@@ -168,6 +174,6 @@
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=13"></script>
+<script src="./app.js?v=14"></script>
 </body>
 </html>
