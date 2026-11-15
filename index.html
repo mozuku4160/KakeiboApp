@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-v2-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-v2-apple-180.png">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=15">
+<link rel="stylesheet" href="./style.css?v=16">
 </head>
 <body>
 <main>
@@ -65,6 +65,7 @@
     <div class="grab"></div>
     <div class="sh-head"><b id="sh-t">記録を追加</b><button id="sh-x" class="txt">閉じる</button></div>
     <div id="sh-st" class="err"></div>
+    <div id="sh-ok" class="okmsg" aria-live="polite"></div>
 
     <label class="lbl" for="amt">金額</label>
     <div class="amtwrap"><span>¥</span><input id="amt" type="text" inputmode="numeric" autocomplete="off" placeholder="タップして入力"></div>
@@ -98,6 +99,7 @@
     <input id="memo" placeholder="例:スーパー">
 
     <button class="go mt14" id="save">追加</button>
+    <button type="button" class="ghost mt10" id="more">追加して続けて入力</button>
     <button class="danger hide" id="del">この記録を削除</button>
   </div>
 
@@ -174,6 +176,6 @@
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=15"></script>
+<script src="./app.js?v=16"></script>
 </body>
 </html>
