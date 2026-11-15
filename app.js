@@ -295,13 +295,47 @@ $("rep").onchange=()=>{
 $("d").onchange=()=>{if($("rep").checked&&!dayTouched)$("rday").value=String(dayOf($("d").value))};
 $("rday").onchange=()=>{dayTouched=true};
 
+/* 金額欄の計算(例: 5000-569-1839 → 2592)。使えるのは数字と ＋ − だけ */
+function normAmount(v){
+  return String(v||"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/＋/g,"+").replace(/[−－ー‐]/g,"-").replace(/[,，\s¥￥円]/g,"");
+}
+function calcAmount(v){
+  let t=normAmount(v);
+  if(!t)return {empty:true};
+  const tail=/[+-]$/.test(t);if(tail)t=t.slice(0,-1);
+  if(!/^\d{1,9}([+-]\d{1,9}){0,19}$/.test(t))return {ok:false};
+  const parts=t.match(/[+-]?\d+/g);
+  return {ok:true,value:parts.reduce((a,x)=>a+Number(x),0),expr:parts.length>1||tail};
+}
+function showCalc(){
+  const r=calcAmount($("amt").value),o=$("amtres");
+  o.classList.remove("bad");
+  if(r.empty||(r.ok&&!r.expr)){o.textContent="";return}
+  if(!r.ok){o.textContent="式を確認";o.classList.add("bad");return}
+  o.textContent="= "+yen(r.value);
+  if(r.value<=0)o.classList.add("bad");
+}
+$("amt").addEventListener("input",showCalc);
+document.querySelectorAll(".amtops button").forEach(b=>{
+  b.addEventListener("pointerdown",ev=>ev.preventDefault()); /* キーボードを閉じない */
+  b.addEventListener("click",()=>{
+    const i=$("amt"),v=i.value,op=b.dataset.op;
+    if(op==="bs")i.value=v.slice(0,-1);
+    else if(v&&!/[+\-\uFF0B\u2212]$/.test(v))i.value=v+op;
+    else if(v)i.value=v.slice(0,-1)+op;
+    if(document.activeElement===i)i.setSelectionRange(i.value.length,i.value.length);
+    showCalc();
+  });
+});
+
 let lastFocus=null;
 function openSheet(e){
   editing=e||null;lastFocus=document.activeElement;smsg("");
   $("sh-t").textContent=editing?"記録を編集":"記録を追加";
   $("save").textContent=editing?"更新":"追加";
   $("del").classList.toggle("hide",!editing);
-  $("amt").value=editing?editing.amount:"";
+  $("amt").value=editing?editing.amount:"";showCalc();
   $("d").value=editing?editing.date:today();
   $("memo").value=editing&&editing.memo?editing.memo:"";
   formCat=editing?editing.category:formCat;
@@ -326,7 +360,7 @@ function closeSheet(){
 ["amt","memo"].forEach(id=>$(id).addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();ev.target.blur()}}));
 $("sheet").addEventListener("click",ev=>{
   const a=document.activeElement;
-  if(a&&a.tagName==="INPUT"&&!ev.target.closest("input,select,label,.amtwrap"))a.blur();
+  if(a&&a.tagName==="INPUT"&&!ev.target.closest("input,select,label,.amtwrap,.amtops"))a.blur();
 });
 $("fab").onclick=()=>openSheet(null);
 $("ov").onclick=closeSheet;
@@ -342,8 +376,11 @@ document.addEventListener("keydown",ev=>{
 });
 
 $("save").onclick=async()=>{
-  const amount=Math.round(Number($("amt").value));
-  if(!amount||amount<=0){smsg("金額を入力してください");$("amt").focus();return}
+  const calc=calcAmount($("amt").value);
+  if(calc.empty){smsg("金額を入力してください");$("amt").focus();return}
+  if(!calc.ok){smsg("金額の式を確認してください(数字と ＋ − だけ使えます)");$("amt").focus();return}
+  const amount=calc.value;
+  if(amount<=0){smsg("金額が0円以下です。式を確認してください");$("amt").focus();return}
   if(!$("d").value){smsg("日付を入力してください");$("d").focus();return}
   const row={date:$("d").value,amount:amount,category:formCat,payer:formPayer,memo:$("memo").value.trim()||null};
   const wantRep=$("rep").checked&&!$("reprow").classList.contains("hide");
