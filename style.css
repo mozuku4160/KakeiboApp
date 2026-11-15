@@ -130,3 +130,8 @@ input[type=month]{appearance:none;-webkit-appearance:none}
 .amtops button{width:56px;min-height:44px;padding:0;font-size:20px;flex:none}
 .amtres{flex:1;text-align:right;font-size:20px;font-weight:700;color:var(--ac)}
 .amtres.bad{color:var(--er);font-size:15px}
+
+/* 続けて入力 */
+.okmsg{font-size:13px;color:var(--ac);font-weight:600}
+.okmsg:not(:empty){background:var(--soft);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+#more{width:100%}

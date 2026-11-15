@@ -335,6 +335,7 @@ function openSheet(e){
   $("sh-t").textContent=editing?"記録を編集":"記録を追加";
   $("save").textContent=editing?"更新":"追加";
   $("del").classList.toggle("hide",!editing);
+  $("more").classList.toggle("hide",!!editing);$("sh-ok").textContent="";
   $("amt").value=editing?editing.amount:"";showCalc();
   $("d").value=editing?editing.date:today();
   $("memo").value=editing&&editing.memo?editing.memo:"";
@@ -375,7 +376,13 @@ document.addEventListener("keydown",ev=>{
   else if(!hidden("sheet"))closeSheet();
 });
 
-$("save").onclick=async()=>{
+/* メモは「店名 商品」の形が多いので、続けて入力では最初の空白までの店名だけを引き継ぐ */
+function shopOf(memo){
+  const m=(memo||"").trim().split(/[\s\u3000]+/)[0]||"";
+  return m?m+" ":"";
+}
+async function doSave(cont){
+  $("sh-ok").textContent="";
   const calc=calcAmount($("amt").value);
   if(calc.empty){smsg("金額を入力してください");$("amt").focus();return}
   if(!calc.ok){smsg("金額の式を確認してください(数字と ＋ − だけ使えます)");$("amt").focus();return}
@@ -386,7 +393,7 @@ $("save").onclick=async()=>{
   const wantRep=$("rep").checked&&!$("reprow").classList.contains("hide");
   const start=row.date.slice(0,7),end=$("rend").value||null;
   if(wantRep&&end&&end<start){smsg("終了月は、記録の月以降にしてください");return}
-  $("save").disabled=true;
+  $("save").disabled=true;$("more").disabled=true;
   try{
     let ruleId=null;
     if(wantRep){
@@ -401,11 +408,26 @@ $("save").onclick=async()=>{
       if(ruleId)await sb.from("recurring").delete().eq("id",ruleId);
       smsg("保存に失敗しました: "+error.message);return;
     }
-    closeSheet();
     month=row.date.slice(0,7);
+    if(cont){
+      smsg("");
+      $("sh-ok").textContent="追加しました("+row.category+" "+yen(row.amount)+")。続けて入力できます";
+      $("amt").value="";showCalc();
+      $("memo").value=shopOf(row.memo);
+      $("rep").checked=false;$("repbox").classList.add("hide");$("rend").value="";dayTouched=false;
+      if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+      $("sheet").scrollTop=0;
+    }else closeSheet();
     await load();
-  }finally{$("save").disabled=false}
-};
+  }finally{$("save").disabled=false;$("more").disabled=false}
+}
+/* 店名を引き継いだメモ欄は、タップしたらカーソルを末尾に置く(続けて商品名を打てるように) */
+$("memo").addEventListener("focus",()=>{
+  const m=$("memo");
+  if(/[\s\u3000]$/.test(m.value))setTimeout(()=>m.setSelectionRange(m.value.length,m.value.length),0);
+});
+$("save").onclick=()=>doSave(false);
+$("more").onclick=()=>doSave(true);
 $("del").onclick=async()=>{
   if(!editing)return;
   if(!confirm("この記録を削除しますか?\n"+editing.date+" "+editing.category+" "+yen(editing.amount)+(editing.recurring_id?"\n(固定費の設定は残り、この月の分は再作成されません)":"")))return;
