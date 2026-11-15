@@ -36,6 +36,14 @@ jobs:
           echo "app.js v=$a / style.css v=$s"
           test -n "$a" && [ "$a" = "$s" ] || { echo "::error::版番号がそろっていません(app.js v=$a / style.css v=$s)"; exit 1; }
 
+      - name: PWAのファイルと版番号
+        run: |
+          node --check sw.js
+          python3 -c "import json;m=json.load(open('manifest.json'));import os,sys;[sys.exit('icon missing: '+i['src']) for i in m['icons'] if not os.path.isfile(i['src'])]"
+          a=$(grep -o 'app\.js?v=[0-9]*' index.html | cut -d= -f2)
+          grep -q "kakeibo-v$a\"" sw.js || { echo "::error::sw.js の CACHE の番号が index.html の v=$a とそろっていません"; exit 1; }
+          grep -q "app.js?v=$a" sw.js && grep -q "style.css?v=$a" sw.js || { echo "::error::sw.js の FILES の版番号が v=$a とそろっていません"; exit 1; }
+
       - name: 秘密の鍵が混ざっていないか
         run: |
           files=$(git ls-files | grep -v -x -e supabase.min.js -e .github/workflows/check.yml)
