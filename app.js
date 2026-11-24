@@ -41,6 +41,24 @@ if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").catch(()=>{})});
 }
 
+/* ---------- 読み込み画像(表示のたびにランダム。前回と同じ画像は続けて出さない) ----------
+   画像を増やすときは img/ に置いて、ここと sw.js の FILES に1行ずつ足す */
+const LOADERS=[
+  {src:"./img/loading-v1.webp",text:"ちょっと待ってね"},
+  {src:"./img/loading-hojihoji-v1.webp",text:"ちょっと待ってね"}
+];
+const BOOT_MIN_MS=5000,MONTH_MIN_MS=2000;
+function pickLoader(){
+  let last=null;try{last=localStorage.getItem("lastLoader")}catch(e){}
+  const pool=LOADERS.length>1?LOADERS.filter(l=>l.src!==last):LOADERS;
+  const l=pool[Math.floor(Math.random()*pool.length)];
+  try{localStorage.setItem("lastLoader",l.src)}catch(e){}
+  return l;
+}
+const wait=ms=>new Promise(r=>setTimeout(r,Math.max(0,ms)));
+let monthLoader=null;
+(()=>{const l=pickLoader();$("boot-img").src=l.src;$("boot-t").textContent=l.text})();
+
 /* ライブラリが読めないときは画面に表示する */
 if(typeof supabase==="undefined"){
   $("boot-t").textContent="ライブラリ(supabase.min.js)を読み込めませんでした。ファイルが正しく置かれているか確認してください。";
@@ -89,10 +107,16 @@ async function fetchRange(a,b){
 let loadingMonth=false;
 async function load(spin){
   const my=++seq;
-  if(spin){loadingMonth=true;render();slowOn()}
+  /* 月の切り替え:画像を最低2秒表示。表示中にもう一度切り替えたときは待たずに進める */
+  let minMs=0;const t0=Date.now();
+  if(spin){
+    if(!loadingMonth){monthLoader=pickLoader();minMs=MONTH_MIN_MS}
+    loadingMonth=true;render();slowOn();
+  }
   try{
     const data=await fetchRange(monthAdd(month,-5)+"-01",monthAdd(month,1)+"-01");
     if(my!==seq)return;
+    if(minMs){await wait(minMs-(Date.now()-t0));if(my!==seq)return}
     rows6=data;msg("");loadingMonth=false;slowOff();render();
   }catch(e){if(my===seq){loadingMonth=false;slowOff();render()}if(my===seq)msg(navigator.onLine===false?"オフラインです。記録の読み込みと保存には通信が必要です。":"読み込みに失敗しました: "+e.message)}
 }
@@ -103,6 +127,7 @@ async function loadNames(){
   renderPayer();render();
 }
 async function init(){
+  const t0=Date.now();
   try{
     /* 名前・カテゴリ・記録・固定費の確認を同時に進める */
     let made=0;
@@ -110,6 +135,7 @@ async function init(){
     if(made)await load();
   }catch(e){}
   finally{
+    await wait(BOOT_MIN_MS-(Date.now()-t0)); /* 起動時は画像を最低5秒表示 */
     ready=true;slowOff();
     $("boot").classList.add("hide");$("app").classList.remove("hide");
   }
@@ -180,8 +206,9 @@ function render(){
     $("tot").textContent="…";$("pa").textContent="";
     $("panel").innerHTML="";$("list").innerHTML="";
     const l=el("div","loader sm");l.setAttribute("role","status");
-    const img=el("img");img.src="./img/loading-v1.webp";img.alt="";img.width=96;img.height=96;
-    l.append(img,el("div","lt","ちょっと待ってね"),el("div","slow sub","通信に時間がかかっています。電波の状況を確認してください"));
+    const ld=monthLoader||LOADERS[0];
+    const img=el("img");img.src=ld.src;img.alt="";img.width=96;img.height=96;
+    l.append(img,el("div","lt",ld.text),el("div","slow sub","通信に時間がかかっています。電波の状況を確認してください"));
     $("panel").appendChild(l);return;
   }
   const cur=inMonth(month);
