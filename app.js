@@ -49,7 +49,7 @@ if(typeof supabase==="undefined"){
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let names={a:"自分",b:"パートナー"},rows6=[],month=today().slice(0,7),chan=null,loaded=false,seq=0;
-let tab="breakdown",trendCat="全体";
+let tab="breakdown",trendCat="全体",fcat=null; /* fcat: 明細の絞り込み中のカテゴリ */
 let editing=null,formCat=DEFAULT_CATS[0].name,formPayer="a",prefPayer="a",dayTouched=false;
 try{prefPayer=localStorage.getItem("payer")||"a"}catch(e){}
 fillDays($("rday"));fillDays($("rday2"));
@@ -66,7 +66,7 @@ function show(session){
   $("app").classList.toggle("hide",!(session&&ready));
   if(!session)slowOff();
   if(session&&!loaded){loaded=true;init()}
-  if(!session){loaded=false;ready=false;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
+  if(!session){loaded=false;ready=false;fcat=null;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
 }
 sb.auth.getSession().then(({data})=>show(data.session));
 sb.auth.onAuthStateChange((_e,s)=>show(s));
@@ -191,6 +191,21 @@ function render(){
   renderPanel();renderList(cur);
 }
 
+/* 内訳・前月比の行をタップすると、明細をそのカテゴリに絞り込む(もう一度で解除) */
+function pickable(r,k){
+  r.classList.add("pick");
+  if(fcat)r.classList.add(fcat===k?"sel":"dim");
+  r.tabIndex=0;r.setAttribute("role","button");
+  r.setAttribute("aria-pressed",fcat===k?"true":"false");
+  r.setAttribute("aria-label",k+(fcat===k?"の絞り込みを解除":"の明細だけを表示"));
+  r.onclick=()=>setFilter(fcat===k?null:k);
+  r.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();r.onclick()}};
+}
+function setFilter(k){
+  fcat=k;renderPanel();renderList(inMonth(month));
+  if(k){const l=$("list");setTimeout(()=>l.scrollIntoView({behavior:"smooth",block:"start"}),0)}
+}
+
 function renderPanel(){
   const p=$("panel");p.innerHTML="";
   if(tab==="breakdown")breakdown(p);else if(tab==="compare")compare(p);else trend(p);
@@ -203,7 +218,7 @@ function breakdown(p){
     const r=el("div","cr"),m=el("div","m"),nm=el("div","nm");
     nm.append(el("span","ell",k+" ("+Math.round(v/tot*100)+"%)"),el("b",null,yen(v)));
     const bar=el("div","bar");bar.style.width=(v/tot*100)+"%";bar.style.background=catOf(k).color;
-    m.append(nm,bar);r.append(icon(k),m);p.appendChild(r);
+    m.append(nm,bar);r.append(icon(k),m);pickable(r,k);p.appendChild(r);
   });
 }
 
@@ -227,15 +242,16 @@ function compare(p){
     nm.append(el("span","ell",k),el("b",null,yen(a)));
     const sub=el("div","nm");
     sub.append(el("span","sub",mLabel(pm)+" "+yen(b)),diffEl(a-b));
-    m.append(nm,sub);r.append(icon(k),m);p.appendChild(r);
+    m.append(nm,sub);r.append(icon(k),m);pickable(r,k);p.appendChild(r);
   });
 }
 
 function shortYen(v){return v>=10000?(Math.round(v/1000)/10)+"万":Math.round(v).toLocaleString("ja-JP")}
 function trend(p){
+  trendCat=fcat||"全体";
   const sel=el("select");sel.setAttribute("aria-label","カテゴリ");
   ["全体"].concat(allCatNames()).forEach(n=>{const o=el("option",null,n);o.value=n;sel.appendChild(o)});
-  sel.value=trendCat;sel.onchange=()=>{trendCat=sel.value;renderPanel()};
+  sel.value=trendCat;sel.onchange=()=>{trendCat=sel.value;fcat=sel.value==="全体"?null:sel.value;renderPanel();renderList(inMonth(month))};
   p.appendChild(sel);
   const months=[];for(let i=-5;i<=0;i++)months.push(monthAdd(month,i));
   const vals=months.map(m=>total(inMonth(m).filter(e=>trendCat==="全体"||e.category===trendCat)));
@@ -256,6 +272,15 @@ function trend(p){
 
 function renderList(cur){
   const box=$("list");box.innerHTML="";
+  if(fcat){
+    cur=cur.filter(e=>e.category===fcat);
+    const bar=el("div","fbar"),t=el("div","m");
+    t.append(el("div","ell",fcat+" で絞り込み中"),el("div","t",cur.length+"件 "+yen(total(cur))));
+    const x=el("button","fx","✕");x.type="button";x.setAttribute("aria-label","絞り込みを解除");
+    x.onclick=()=>setFilter(null);
+    bar.append(icon(fcat),t,x);box.appendChild(bar);
+    if(!cur.length){box.appendChild(el("div","sub","この月の"+fcat+"の記録はありません"));return}
+  }
   if(!cur.length){box.appendChild(el("div","sub","この月の記録はまだありません。右下の「＋」から追加できます"));return}
   cur.forEach(e=>{
     const r=el("div","it");r.tabIndex=0;r.setAttribute("role","button");
@@ -685,6 +710,7 @@ $("cs-save").onclick=async()=>{
         }
         if(formCat===old.name)formCat=name;
         if(trendCat===old.name)trendCat=name;
+        if(fcat===old.name)fcat=name;
       }
     }
     closeCatEdit();await after();
@@ -703,6 +729,7 @@ $("cmgo").onclick=async()=>{
   const e3=await sb.from("categories").delete().eq("id",from.id);
   if(e3.error){cmsg("記録は移しましたが、カテゴリの削除に失敗しました: "+e3.error.message);return}
   if(formCat===from.name)formCat=to;
+  if(fcat===from.name)fcat=to;
   closeCatEdit();await after();
 };
 $("cdel").onclick=async()=>{

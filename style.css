@@ -146,3 +146,12 @@ input[type=month]{appearance:none;-webkit-appearance:none}
 body.slowing .loader .slow{display:block}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
 @media (prefers-reduced-motion:reduce){.loader img{animation:none}}
+
+/* カテゴリで明細を絞り込む */
+.cr.pick{cursor:pointer;border-radius:10px;padding:8px 6px;margin:0 -6px}
+.cr.pick:active{background:var(--soft)}
+.cr.pick.sel{background:var(--soft);box-shadow:inset 0 0 0 2px var(--ac)}
+.cr.pick.dim{opacity:.45}
+.fbar{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:10px;padding:6px 4px 6px 10px;margin-bottom:6px;font-weight:700}
+.fbar .t{font-weight:400}
+.fx{width:44px;min-height:44px;padding:0;border:0;background:none;color:var(--sub);font-size:18px;flex:none}
