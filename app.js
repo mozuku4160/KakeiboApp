@@ -43,7 +43,7 @@ if("serviceWorker" in navigator){
 
 /* ライブラリが読めないときは画面に表示する */
 if(typeof supabase==="undefined"){
-  $("boot").textContent="ライブラリ(supabase.min.js)を読み込めませんでした。ファイルが正しく置かれているか確認してください。";
+  $("boot-t").textContent="ライブラリ(supabase.min.js)を読み込めませんでした。ファイルが正しく置かれているか確認してください。";
   throw new Error("supabase.min.js not loaded");
 }
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -55,12 +55,18 @@ try{prefPayer=localStorage.getItem("payer")||"a"}catch(e){}
 fillDays($("rday"));fillDays($("rday2"));
 
 /* ---------- 認証 ---------- */
+/* 読み込み中の表示(10秒以上かかったら、電波の案内も出す) */
+let ready=false,slowTimer=null;
+function slowOn(){clearTimeout(slowTimer);document.body.classList.remove("slowing");slowTimer=setTimeout(()=>document.body.classList.add("slowing"),10000)}
+function slowOff(){clearTimeout(slowTimer);document.body.classList.remove("slowing")}
+slowOn();
 function show(session){
-  $("boot").classList.add("hide");
+  $("boot").classList.toggle("hide",!(session&&!ready));
   $("login").classList.toggle("hide",!!session);
-  $("app").classList.toggle("hide",!session);
+  $("app").classList.toggle("hide",!(session&&ready));
+  if(!session)slowOff();
   if(session&&!loaded){loaded=true;init()}
-  if(!session){loaded=false;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
+  if(!session){loaded=false;ready=false;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
 }
 sb.auth.getSession().then(({data})=>show(data.session));
 sb.auth.onAuthStateChange((_e,s)=>show(s));
@@ -80,13 +86,15 @@ async function fetchRange(a,b){
     all=all.concat(data);if(data.length<1000)return all;from+=1000;
   }
 }
-async function load(){
+let loadingMonth=false;
+async function load(spin){
   const my=++seq;
+  if(spin){loadingMonth=true;render();slowOn()}
   try{
     const data=await fetchRange(monthAdd(month,-5)+"-01",monthAdd(month,1)+"-01");
     if(my!==seq)return;
-    rows6=data;msg("");render();
-  }catch(e){if(my===seq)msg(navigator.onLine===false?"オフラインです。記録の読み込みと保存には通信が必要です。":"読み込みに失敗しました: "+e.message)}
+    rows6=data;msg("");loadingMonth=false;slowOff();render();
+  }catch(e){if(my===seq){loadingMonth=false;slowOff();render()}if(my===seq)msg(navigator.onLine===false?"オフラインです。記録の読み込みと保存には通信が必要です。":"読み込みに失敗しました: "+e.message)}
 }
 async function loadNames(){
   const {data}=await sb.from("settings").select("*");
@@ -95,11 +103,16 @@ async function loadNames(){
   renderPayer();render();
 }
 async function init(){
-  render();
-  await loadNames();
-  await loadCats();
-  await runRecurring();
-  await load();
+  try{
+    /* 名前・カテゴリ・記録・固定費の確認を同時に進める */
+    let made=0;
+    await Promise.all([loadNames(),loadCats(),load(),runRecurring().then(n=>{made=n})]);
+    if(made)await load();
+  }catch(e){}
+  finally{
+    ready=true;slowOff();
+    $("boot").classList.add("hide");$("app").classList.remove("hide");
+  }
   chan=sb.channel("kakeibo")
     .on("postgres_changes",{event:"*",schema:"public",table:"entries"},load)
     .on("postgres_changes",{event:"*",schema:"public",table:"settings"},loadNames)
@@ -147,8 +160,8 @@ async function runRecurring(){
 }
 
 /* ---------- 月の切り替え・タブ ---------- */
-$("pv").onclick=()=>{month=monthAdd(month,-1);render();load()};
-$("nx").onclick=()=>{month=monthAdd(month,1);render();load()};
+$("pv").onclick=()=>{month=monthAdd(month,-1);load(true)};
+$("nx").onclick=()=>{month=monthAdd(month,1);load(true)};
 $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{
   tab=b.dataset.t;
   $("tabs").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
@@ -162,6 +175,15 @@ const total=list=>list.reduce((t,e)=>t+e.amount,0);
 
 function render(){
   const [y,m]=month.split("-");$("ml").textContent=y+"年"+Number(m)+"月";
+  $("list").classList.toggle("hide",loadingMonth);
+  if(loadingMonth){
+    $("tot").textContent="…";$("pa").textContent="";
+    $("panel").innerHTML="";$("list").innerHTML="";
+    const l=el("div","loader sm");l.setAttribute("role","status");
+    const img=el("img");img.src="./img/loading-v1.webp";img.alt="";img.width=96;img.height=96;
+    l.append(img,el("div","lt","ちょっと待ってね"),el("div","slow sub","通信に時間がかかっています。電波の状況を確認してください"));
+    $("panel").appendChild(l);return;
+  }
   const cur=inMonth(month);
   let pa=0,pb=0;cur.forEach(e=>{if(e.payer==="a")pa+=e.amount;else pb+=e.amount});
   $("tot").textContent=yen(pa+pb);
@@ -394,6 +416,8 @@ async function doSave(cont){
   const start=row.date.slice(0,7),end=$("rend").value||null;
   if(wantRep&&end&&end<start){smsg("終了月は、記録の月以降にしてください");return}
   $("save").disabled=true;$("more").disabled=true;
+  const saveLabel=$("save").textContent,moreLabel=$("more").textContent;
+  (cont?$("more"):$("save")).textContent="保存中…";
   try{
     let ruleId=null;
     if(wantRep){
@@ -419,7 +443,7 @@ async function doSave(cont){
       $("sheet").scrollTop=0;
     }else closeSheet();
     await load();
-  }finally{$("save").disabled=false;$("more").disabled=false}
+  }finally{$("save").disabled=false;$("more").disabled=false;$("save").textContent=saveLabel;$("more").textContent=moreLabel}
 }
 /* 店名を引き継いだメモ欄は、タップしたらカーソルを末尾に置く(続けて商品名を打てるように) */
 $("memo").addEventListener("focus",()=>{

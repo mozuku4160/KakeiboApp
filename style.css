@@ -6,7 +6,6 @@ body.lock{overflow:hidden}
 main{max-width:520px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 14px 14px}
 h1{font-size:18px;margin:4px 0}
 .hide{display:none!important}
-.boot{padding:40px 0;text-align:center}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
 .row{display:flex;gap:8px;margin-bottom:8px}
 .row>*{flex:1;min-width:0}
@@ -135,3 +134,15 @@ input[type=month]{appearance:none;-webkit-appearance:none}
 .okmsg{font-size:13px;color:var(--ac);font-weight:600}
 .okmsg:not(:empty){background:var(--soft);border-radius:10px;padding:8px 12px;margin-bottom:8px}
 #more{width:100%}
+
+/* 読み込み中 */
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:70vh;min-height:70dvh;text-align:center}
+.loader.sm{min-height:220px}
+.loader img{width:160px;height:160px;animation:bob 1.6s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15))}
+.loader.sm img{width:96px;height:96px}
+.loader .lt{font-size:17px;font-weight:700}
+.loader.sm .lt{font-size:15px}
+.loader .slow{display:none;max-width:260px}
+body.slowing .loader .slow{display:block}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.loader img{animation:none}}
