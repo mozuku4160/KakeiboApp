@@ -137,11 +137,11 @@ input[type=month]{appearance:none;-webkit-appearance:none}
 
 /* 読み込み中 */
 .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:70vh;min-height:70dvh;text-align:center}
-.loader.sm{min-height:220px}
-.loader img{width:160px;height:160px;animation:bob 1.6s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15))}
-.loader.sm img{width:96px;height:96px}
-.loader .lt{font-size:17px;font-weight:700}
-.loader.sm .lt{font-size:15px}
+.loader.sm{min-height:280px}
+.loader img{width:min(240px,64vw);height:min(240px,64vw);animation:bob 1.6s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15))}
+.loader.sm img{width:160px;height:160px}
+.loader .lt{font-size:19px;font-weight:700}
+.loader.sm .lt{font-size:17px}
 .loader .slow{display:none;max-width:260px}
 body.slowing .loader .slow{display:block}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
