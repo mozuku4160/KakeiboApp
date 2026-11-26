@@ -155,3 +155,13 @@ body.slowing .loader .slow{display:block}
 .fbar{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:10px;padding:6px 4px 6px 10px;margin-bottom:6px;font-weight:700}
 .fbar .t{font-weight:400}
 .fx{width:44px;min-height:44px;padding:0;border:0;background:none;color:var(--sub);font-size:18px;flex:none}
+
+/* 更新ボタン */
+.rfwrap{position:relative;display:flex;flex-direction:column;align-items:flex-end}
+.rf{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ac);border:1px solid var(--bd);background:var(--card)}
+.rf:active{background:var(--soft)}
+.rf.spin svg{animation:rfspin .8s linear infinite}
+@keyframes rfspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rf.spin svg{animation:none}}
+.rf-t{position:absolute;top:13px;right:52px;white-space:nowrap;font-size:12px;color:var(--sub)}
+.lo{width:100%;margin-bottom:12px;color:var(--sub)}
