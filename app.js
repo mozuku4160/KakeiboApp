@@ -93,7 +93,34 @@ $("li").onclick=async()=>{
   const {error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});
   if(error)alert("ログインできませんでした。メールアドレスとパスワードを確認してください。");
 };
-$("lo").onclick=()=>sb.auth.signOut();
+$("lo").onclick=()=>{if(confirm("ログアウトしますか?"))sb.auth.signOut()};
+
+/* ---------- 更新ボタン:新しい版があれば入れ替え、なければ記録を読み込み直す ---------- */
+let rfBusy=false,rfTimer=null;
+async function newerVersion(){
+  try{
+    const mine=(document.querySelector('script[src*="app.js"]').getAttribute("src").match(/v=(\d+)/)||[])[1];
+    const html=await (await fetch("./index.html",{cache:"no-store"})).text();
+    const live=(html.match(/app\.js\?v=(\d+)/)||[])[1];
+    return !!(mine&&live&&live!==mine);
+  }catch(e){return false}
+}
+$("rf").onclick=async()=>{
+  if(rfBusy||!ready)return;
+  rfBusy=true;$("rf").classList.add("spin");$("rf-t").textContent="";clearTimeout(rfTimer);
+  try{
+    if(await newerVersion()){
+      try{const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(reg)reg.update()}catch(e){}
+      location.reload();return;
+    }
+    let made=0;
+    await Promise.all([load(true),loadNames(),loadCats(),runRecurring().then(n=>{made=n})]);
+    if(made)await load();
+    const t=new Date();
+    $("rf-t").textContent="更新しました "+t.getHours()+":"+pad(t.getMinutes());
+    rfTimer=setTimeout(()=>{$("rf-t").textContent=""},4000);
+  }finally{rfBusy=false;$("rf").classList.remove("spin")}
+};
 
 /* ---------- データ(表示中の月を含む直近6か月分を取得) ---------- */
 async function fetchRange(a,b){
