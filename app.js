@@ -47,7 +47,8 @@ const LOADERS=[
   {src:"./img/loading-v1.webp",text:"ちょっと待ってね"},
   {src:"./img/loading-hojihoji-v1.webp",text:"ちょっと待ってね"},
   {src:"./img/loading-daikon-v2.webp",text:"ちょっと待ってね"},
-  {src:"./img/loading-gokugoku-v1.webp",text:"ちょっと待ってね"}
+  {src:"./img/loading-gokugoku-v1.webp",text:"ちょっと待ってね"},
+  {src:"./img/loading-mogumogu-v1.webp",text:"ちょっと待ってね"}
 ];
 const BOOT_MIN_MS=5000,MONTH_MIN_MS=2000;
 function pickLoader(){
