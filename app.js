@@ -451,7 +451,7 @@ function openSheet(e){
   $("repnote").classList.toggle("hide",!fromRule);
   $("rep").checked=false;$("repbox").classList.add("hide");
   $("rend").value="";dayTouched=false;$("rday").value=String(dayOf($("d").value));
-  renderCats();renderPayer();
+  renderCats();renderPayer();hideSug();loadShops();
   $("ov").classList.remove("hide");$("sheet").classList.remove("hide");
   lockOn();$("sheet").scrollTop=0;
 }
@@ -514,7 +514,7 @@ async function doSave(cont){
       if(ruleId)await sb.from("recurring").delete().eq("id",ruleId);
       smsg("保存に失敗しました: "+error.message);return;
     }
-    month=row.date.slice(0,7);
+    month=row.date.slice(0,7);shopsAt=0;
     if(cont){
       smsg("");
       $("sh-ok").textContent="追加しました("+row.category+" "+yen(row.amount)+")。続けて入力できます";
@@ -527,6 +527,77 @@ async function doSave(cont){
     await load();
   }finally{$("save").disabled=false;$("more").disabled=false;$("save").textContent=saveLabel;$("more").textContent=moreLabel}
 }
+/* よく使う入力の候補:メモ欄に打ち始めると、過去1年のメモの店名(最初の空白まで)を候補に出す。
+   選ぶと「店名 」とその店でいちばん多いカテゴリが入る(支払った人は変えない) */
+let shops=null,shopsAt=0,shopsBusy=null;
+function kanaKey(v){
+  return String(v||"").normalize("NFKC").toLowerCase()
+    .replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
+}
+async function loadShops(force){
+  if(!force&&shops&&Date.now()-shopsAt<10*60*1000)return shops;
+  if(shopsBusy)return shopsBusy;
+  shopsBusy=(async()=>{
+    const d=new Date();d.setFullYear(d.getFullYear()-1);
+    const since=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const map=new Map();
+    try{
+      for(let from=0;from<5000;from+=1000){
+        const {data,error}=await sb.from("entries").select("memo,category,date").gte("date",since).not("memo","is",null).order("id").range(from,from+999);
+        if(error||!data)break;
+        data.forEach(e=>{
+          const name=shopOf(e.memo).trim();if(!name)return;
+          const k=kanaKey(name);
+          let s=map.get(k);
+          if(!s){s={name:name,key:k,n:0,last:"",cats:{}};map.set(k,s)}
+          s.n++;
+          if(e.date>=s.last){s.last=e.date;s.name=name}
+          const c=s.cats[e.category]||(s.cats[e.category]={n:0,last:""});
+          c.n++;if(e.date>c.last)c.last=e.date;
+        });
+        if(data.length<1000)break;
+      }
+      shops=[...map.values()];shopsAt=Date.now();
+    }catch(e){if(!shops)shops=[]}
+    shopsBusy=null;return shops;
+  })();
+  return shopsBusy;
+}
+function shopCat(s){
+  const names=new Set(cats.map(c=>c.name));
+  const list=Object.entries(s.cats).filter(([n])=>names.has(n))
+    .sort((a,b)=>b[1].n-a[1].n||(b[1].last>a[1].last?1:-1));
+  return list.length?list[0][0]:null;
+}
+function hideSug(){const b=$("sug");b.classList.add("hide");b.innerHTML=""}
+function showSug(){
+  const v=$("memo").value;
+  if(!shops||!v.trim()||/[\s\u3000]/.test(v.replace(/^[\s\u3000]+/,""))){hideSug();return}
+  const q=kanaKey(v.trim());
+  const hit=shops.filter(s=>s.key.includes(q))
+    .sort((a,b)=>(b.key.startsWith(q)-a.key.startsWith(q))||b.n-a.n||(b.last>a.last?1:-1)).slice(0,5);
+  const box=$("sug");box.innerHTML="";
+  if(!hit.length){box.classList.add("hide");return}
+  hit.forEach(s=>{
+    const c=shopCat(s),b=el("button","sg");b.type="button";b.setAttribute("role","option");
+    if(c)b.append(icon(c));
+    b.append(el("span","",s.name));
+    b.addEventListener("pointerdown",ev=>ev.preventDefault()); /* キーボードを閉じない */
+    b.onclick=()=>{
+      const m=$("memo");
+      m.blur(); /* 変換中の文字が残らないよう、いったんキーボードを閉じてから入れる */
+      m.value=s.name+" ";
+      if(c){formCat=c;renderCatBtn()}
+      hideSug();
+    };
+    box.append(b);
+  });
+  box.classList.remove("hide");
+}
+$("memo").addEventListener("input",()=>{if(shops)showSug();else loadShops().then(showSug)});
+$("memo").addEventListener("focus",()=>{loadShops().then(()=>{if(document.activeElement===$("memo"))showSug()})});
+$("memo").addEventListener("blur",()=>setTimeout(()=>{if(document.activeElement!==$("memo"))hideSug()},150));
+
 /* 店名を引き継いだメモ欄は、タップしたらカーソルを末尾に置く(続けて商品名を打てるように) */
 $("memo").addEventListener("focus",()=>{
   const m=$("memo");
