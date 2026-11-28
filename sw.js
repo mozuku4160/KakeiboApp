@@ -1,7 +1,7 @@
 /* 画面のファイルだけをスマホに保存する。家計のデータ(Supabaseとの通信)には一切触れない。
    版を上げるときは CACHE の番号を index.html の ?v= とそろえる(自動チェックあり)。 */
-const CACHE="kakeibo-v26";
-const FILES=["./","./index.html","./style.css?v=26","./app.js?v=26","./supabase.min.js","./manifest.json",
+const CACHE="kakeibo-v27";
+const FILES=["./","./index.html","./style.css?v=27","./app.js?v=27","./supabase.min.js","./manifest.json",
   "./icons/icon-v2-192.png","./icons/icon-v2-512.png","./icons/icon-v2-apple-180.png","./img/loading-v1.webp","./img/loading-hojihoji-v1.webp","./img/loading-daikon-v2.webp","./img/loading-gokugoku-v1.webp","./img/loading-mogumogu-v1.webp"];
 
 self.addEventListener("install",e=>{

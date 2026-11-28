@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-v2-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-v2-apple-180.png">
 <title>ふたりの家計簿</title>
-<link rel="stylesheet" href="./style.css?v=26">
+<link rel="stylesheet" href="./style.css?v=27">
 </head>
 <body>
 <main>
@@ -109,7 +109,8 @@
     <input type="date" id="d">
 
     <label class="lbl" for="memo">メモ(任意)</label>
-    <input id="memo" placeholder="例:スーパー">
+    <div id="sug" class="sug hide" role="listbox" aria-label="よく使う店"></div>
+    <input id="memo" placeholder="例:スーパー" autocomplete="off">
 
     <button class="go mt14" id="save">追加</button>
     <button type="button" class="ghost mt10" id="more">追加して続けて入力</button>
@@ -189,6 +190,6 @@
 </main>
 
 <script src="./supabase.min.js"></script>
-<script src="./app.js?v=26"></script>
+<script src="./app.js?v=27"></script>
 </body>
 </html>
