@@ -70,7 +70,7 @@ if(typeof supabase==="undefined"){
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let names={a:"自分",b:"パートナー"},rows6=[],month=today().slice(0,7),chan=null,loaded=false,seq=0;
-let tab="breakdown",trendCat="全体",fcat=null; /* fcat: 明細の絞り込み中のカテゴリ */
+let tab="breakdown",trendCat="全体",fcat=null,fpay=null; /* fcat: 明細の絞り込み中のカテゴリ / fpay: 払った人("a"/"b") */
 let editing=null,formCat=DEFAULT_CATS[0].name,formPayer="a",prefPayer="a",dayTouched=false;
 try{prefPayer=localStorage.getItem("payer")||"a"}catch(e){}
 fillDays($("rday"));fillDays($("rday2"));
@@ -87,7 +87,7 @@ function show(session){
   $("app").classList.toggle("hide",!(session&&ready));
   if(!session)slowOff();
   if(session&&!loaded){loaded=true;init()}
-  if(!session){loaded=false;ready=false;fcat=null;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
+  if(!session){loaded=false;ready=false;fcat=null;fpay=null;closeCats();closeRules();closeSheet();if(chan){sb.removeChannel(chan);chan=null}}
 }
 sb.auth.getSession().then(({data})=>show(data.session));
 sb.auth.onAuthStateChange((_e,s)=>show(s));
@@ -244,9 +244,30 @@ function render(){
   const cur=inMonth(month);
   let pa=0,pb=0;cur.forEach(e=>{if(e.payer==="a")pa+=e.amount;else pb+=e.amount});
   $("tot").textContent=yen(pa+pb);
-  $("pa").textContent=names.a+" "+yen(pa)+" / "+names.b+" "+yen(pb);
+  renderPa(cur);
   renderPanel();renderList(cur);
 }
+
+/* ふたりの負担の割合。名前を押すと、明細をその人が払った分に絞り込む(カテゴリの絞り込みと併用可) */
+function renderPa(cur){
+  const box=$("pa");box.innerHTML="";box.className="pa";
+  const amt={a:0,b:0};cur.forEach(e=>{amt[e.payer==="a"?"a":"b"]+=e.amount});
+  const sum=amt.a+amt.b;
+  const row=el("div","pw");
+  ["a","b"].forEach(k=>{
+    const b=el("button","pp "+k+(fpay?(fpay===k?" sel":" dim"):""));b.type="button";
+    const pct=sum?Math.round(amt[k]/sum*100):null;
+    b.append(el("span","dot"),el("span","pn",names[k]),el("span","pv",yen(amt[k])+(pct!=null?" ("+pct+"%)":"")));
+    b.setAttribute("aria-pressed",fpay===k?"true":"false");
+    b.setAttribute("aria-label",names[k]+" "+yen(amt[k])+(fpay===k?" の絞り込みを解除":" が払った分だけを表示"));
+    b.onclick=()=>setPayFilter(fpay===k?null:k);
+    row.append(b);
+  });
+  const bar=el("div","pbar"+(sum?"":" empty"));bar.setAttribute("aria-hidden","true");
+  if(sum){const x=el("span","a");x.style.width=(amt.a/sum*100)+"%";bar.append(x)}
+  box.append(row,bar);
+}
+function setPayFilter(k){fpay=k;renderPa(inMonth(month));renderList(inMonth(month))}
 
 /* 内訳・前月比の行をタップすると、明細をそのカテゴリに絞り込む(もう一度で解除) */
 function pickable(r,k){
@@ -329,14 +350,26 @@ function trend(p){
 
 function renderList(cur){
   const box=$("list");box.innerHTML="";
-  if(fcat){
-    cur=cur.filter(e=>e.category===fcat);
-    const bar=el("div","fbar"),t=el("div","m");
-    t.append(el("div","ell",fcat+" で絞り込み中"),el("div","t",cur.length+"件 "+yen(total(cur))));
-    const x=el("button","fx","✕");x.type="button";x.setAttribute("aria-label","絞り込みを解除");
-    x.onclick=()=>setFilter(null);
-    bar.append(icon(fcat),t,x);box.appendChild(bar);
-    if(!cur.length){box.appendChild(el("div","sub","この月の"+fcat+"の記録はありません"));return}
+  if(fcat||fpay){
+    if(fcat)cur=cur.filter(e=>e.category===fcat);
+    if(fpay)cur=cur.filter(e=>(e.payer==="a"?"a":"b")===fpay);
+    const info=cur.length+"件 "+yen(total(cur));
+    if(fcat){
+      const bar=el("div","fbar"),t=el("div","m");
+      t.append(el("div","ell",fcat+" で絞り込み中"));
+      if(!fpay)t.append(el("div","t",info));
+      const x=el("button","fx","✕");x.type="button";x.setAttribute("aria-label",fcat+"の絞り込みを解除");
+      x.onclick=()=>setFilter(null);
+      bar.append(icon(fcat),t,x);box.appendChild(bar);
+    }
+    if(fpay){
+      const bar=el("div","fbar"),t=el("div","m");
+      t.append(el("div","ell",names[fpay]+" が払った分で絞り込み中"),el("div","t",info));
+      const x=el("button","fx","✕");x.type="button";x.setAttribute("aria-label",names[fpay]+"の絞り込みを解除");
+      x.onclick=()=>setPayFilter(null);
+      bar.append(el("span","pdot "+fpay),t,x);box.appendChild(bar);
+    }
+    if(!cur.length){box.appendChild(el("div","sub","この月の"+(fpay?names[fpay]+"が払った":"")+(fcat||"")+"の記録はありません"));return}
   }
   if(!cur.length){box.appendChild(el("div","sub","この月の記録はまだありません。右下の「＋」から追加できます"));return}
   cur.forEach(e=>{
