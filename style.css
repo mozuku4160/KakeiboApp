@@ -170,3 +170,19 @@ body.slowing .loader .slow{display:block}
 .sug{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
 .sug .sg{width:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:6px 12px 6px 6px;border-radius:22px;font-size:16px;background:var(--card)}
 .sug .sg .ic{flex:0 0 30px;width:30px;height:30px;font-size:16px}
+
+/* ふたりの負担の割合 */
+.pa{margin-top:4px}
+.pa .pw{display:flex;gap:8px}
+.pa .pp{flex:1;width:auto;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;min-height:44px;padding:6px 10px;border-radius:10px;background:none;border:1px solid var(--bd);text-align:left;font-size:13px;color:var(--tx)}
+.pa .pp .pn{font-weight:700}
+.pa .pp .pv{color:var(--sub);width:100%;padding-left:16px}
+.pa .pp.sel{border-color:var(--ac);background:var(--soft)}
+.pa .pp.dim{opacity:.55}
+.pa .dot,.pdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.pa .pp.a .dot,.pdot.a{background:var(--ac)}
+.pa .pp.b .dot,.pdot.b{background:#e0a43b}
+.pdot{width:14px;height:14px;margin:0 10px}
+.pbar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:#e0a43b;margin:8px 0 2px}
+.pbar .a{background:var(--ac)}
+.pbar.empty{background:var(--bd)}
